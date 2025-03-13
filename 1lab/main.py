@@ -4,34 +4,16 @@ import os
 import logging
 import threading
 import sys
-import time
-from abc import ABC, abstractmethod
 import json
 
 HOST = 'localhost'
-PORT = 12346
-
-file_handler = logging.FileHandler(filename='tmp.log')
-stdout_handler = logging.StreamHandler(stream=sys.stdout)
-handlers = [stdout_handler]
+PORT = 12345
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='[%(asctime)s] %(name)s - %(message)s',
-    handlers=handlers
+    format='[%(asctime)s] %(name)s %(message)s',
+    handlers=[logging.StreamHandler(stream=sys.stdout)]
 )
-
-
-class RecvSendMsgsProtocol(ABC):
-    MSG_SIZE = 16
-
-    @abstractmethod
-    def recv(self, connected_socket):
-        return ''
-
-    @abstractmethod
-    def send(self, connected_socket, text):
-        pass
 
 
 class Node:
@@ -77,9 +59,6 @@ class Tree:
         try:
             current = self.json_like[directories[0]]
         except:
-            # print(directories[0])
-            # print(self.json_like)
-            # directories[0][0] = directories[0].upper()
             current = self.json_like[directories[0].upper()]
         for i, d in enumerate(directories[1:]):
             for value in current:
@@ -126,30 +105,39 @@ class Server:
             recv_text = self.protocol_handler.recv(client_socket)
             if not recv_text:
                 break
-            self.logger.info(f'recv "{recv_text}"')
+            self.logger.info(f'recv: {recv_text}')
             if 'rename' in recv_text:
                 old, new = recv_text.split('\n')[0][7:-1].split(', ')
                 self.renaming(old, new)
                 send_text = 'renaming done'
+                self.logger.info(f'send: {send_text}')
                 self.protocol_handler.send(client_socket, send_text)
-                self.logger.info(f'send "{send_text}"')
             elif 'update' in recv_text.lower():
                 self.search_exe()
                 send_text = 'information updated'
+                self.logger.info(f'send: {send_text}')
                 self.protocol_handler.send(client_socket, send_text)
-                self.logger.info(f'send "{send_text}"')
             elif 'file' in recv_text.lower():
                 send_text = os.getcwd() + '\\Env_exe_info.json'
+                self.logger.info(f'send: {send_text}')
                 self.protocol_handler.send(client_socket, send_text)
-                self.logger.info(f'send "{send_text}"')
             elif 'show' in recv_text.lower():
                 send_text = self.tree.show()
+                self.logger.info(f'send: {send_text}')
                 self.protocol_handler.send(client_socket, send_text)
-                self.logger.info(f'send "{send_text}"')
+            elif 'help' == recv_text.lower():
+                send_text = '\nServer commands:\n"file": get directory to the file "Env_exe_info.json" with tree ' \
+                            'structured info about executable files\n"show": show info contained in ' \
+                            '"Env_exe_info.json"\n"update": update info about the environment in "Env_exe_info.json"' \
+                            '\n"rename": rename some file or directory, to apply command use syntax:' \
+                            '\n\trename(<full current directory>, <full new directory>)' \
+                            '\n\tattention: no quotation marks ("") needed in renaming syntax'
+                self.logger.info(f'send: {send_text}')
+                self.protocol_handler.send(client_socket, send_text)
             else:
-                send_text = 'unknown command'
+                send_text = 'Unknown command. To watch the list of available commands enter command "help".'
+                self.logger.info(f'send: {send_text}')
                 self.protocol_handler.send(client_socket, send_text)
-                self.logger.info(f'send "{send_text}"')
 
     def run(self):
         self.search_exe()
@@ -197,29 +185,30 @@ class Client:
             while True:
                 to_send = input('Enter command:\n')
                 if to_send:
-                    send_text = to_send
-                    self.protocol_handler.send(s, send_text)
-                    self.logger.info(f'send "{send_text}"')
-                    recv_text = self.protocol_handler.recv(s)
-                    self.logger.info(f'recv "{recv_text}"')
+                    self.logger.info(f'send: {to_send}')
+                    self.protocol_handler.send(s, to_send)
+                    self.logger.info(f'recv: {self.protocol_handler.recv(s)}')
                 else:
                     break
 
 
-class Protocol(RecvSendMsgsProtocol):
+class Protocol(object):
+    def __init__(self, size=16):
+        self.MSG_SIZE = size
+
     def recv(self, connected_socket):
-        res_data = b''
+        to_return = b''
         data = connected_socket.recv(self.MSG_SIZE)
         connected_socket.setblocking(False)
         while data:
-            res_data += data
+            to_return += data
             try:
                 data = connected_socket.recv(self.MSG_SIZE)
             except:
                 break
         connected_socket.setblocking(True)
         connected_socket.send(b'ok')
-        return res_data.decode()
+        return to_return.decode()
 
     def send(self, connected_socket, text):
         connected_socket.sendall(text.encode())
@@ -228,19 +217,16 @@ class Protocol(RecvSendMsgsProtocol):
             pass
 
 
-def test(protocol_cls):
-    server = Server(protocol_cls())
-    client = Client(protocol_cls())
-
-    t_s = threading.Thread(target=Server.run, args=[server])
-    t_c = threading.Thread(target=client.run, args=[])
-    t_s.start()
-    time.sleep(1)
-    t_c.start()
-    t_c.join()
-    t_s.join()
+def connect(prot):
+    server = Server(prot())
+    client = Client(prot())
+    thread_s = threading.Thread(target=server.run)
+    tread_c = threading.Thread(target=client.run)
+    thread_s.start()
+    tread_c.start()
+    thread_s.join()
+    tread_c.join()
 
 
 if __name__ == "__main__":
-    # print('hi')
-    test(Protocol)
+    connect(Protocol)
