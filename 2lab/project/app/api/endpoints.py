@@ -4,7 +4,6 @@ sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
 from fastapi import APIRouter
 from models.models import User
-# from schemas import User
 from secrets import token_urlsafe
 from db.connect_db import Session
 from sqlalchemy.future import select

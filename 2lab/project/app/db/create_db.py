@@ -6,8 +6,8 @@
 # from app.models.models import User
 # target_metadata = User.metadata
 
-from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, func
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import declarative_base
 
 engine = create_engine('sqlite:///test.db')
 Base = declarative_base()
@@ -23,10 +23,3 @@ class User(Base):
 
 
 Base.metadata.create_all(engine)
-#
-# Session = sessionmaker(bind=engine)
-# session = Session()
-#
-# new_user = User(username='Lisa', password='password', email='lisa@ex.com')
-# session.add(new_user)
-# session.commit()
