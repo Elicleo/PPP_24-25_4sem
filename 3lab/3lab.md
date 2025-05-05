@@ -17,17 +17,28 @@ project/
 
 ├── app/ 
 
-│   ├── api/           # эндпоинты \\
+│   ├── api/           # эндпоинты
+
 │   ├── core/          # config 
+
 │   ├── db/            # файл базы данных и сессия подключения 
+
 │   ├── models/        # модели для базы данных 
+
 │   ├── cruds/         # ORM CRUD операции 
+
 │   ├── schemas/       # схемы запросов 
+
 │   ├── services/      # доп. сервисы и логика 
+
 │   ├── celery/        # настройки и задачи Celery 
+
 │   └── websocket/     # модули для работы с WebSocket 
+
 ├── main.py 
+
 ├── alembic/ 
+
 └── .env
 
 
