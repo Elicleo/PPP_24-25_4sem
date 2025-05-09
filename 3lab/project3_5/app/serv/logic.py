@@ -1,13 +1,31 @@
 import sys
+import os
 from os.path import dirname, abspath
 sys.path.insert(0, dirname(dirname(abspath(__file__))))
+os.system('redis-server.exe')
+
+import subprocess
+
+
+def start_celery_worker():
+    cmd = [
+        sys.executable,  # путь к текущему интерпретатору Python
+        '-m', 'celery',
+        '-A', 'app.clr.celery_app',
+        'worker',
+        '--pool=eventlet',
+        '--loglevel=info'
+    ]
+    subprocess.Popen(cmd)
+
+
+start_celery_worker()
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from api.endpoints import router as router_users
 from websockt.websocket import html, manager, execute_command
 from clr.celery_app import binarize_image
-import uvicorn
 import redis
 import json
 import asyncio
@@ -74,6 +92,3 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
 
 
 app.include_router(router_users)
-
-if __name__ == "__main__":
-    uvicorn.run("logic:app", host="127.0.0.1", port=8000, reload=True)
