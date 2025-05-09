@@ -23,9 +23,5 @@ async def binarize(im_raw_b64: str):
 
 app.include_router(router_users)
 
-# print(*sys.path, sep='\n')
-# from db import connect_db
-# f = test.db
-
 if __name__ == "__main__":
-    uvicorn.run("project2.app.services.main:app", host="127.0.0.1", port=8000)
+    uvicorn.run("project2.app.services.logic:app", host="127.0.0.1", port=8000)
